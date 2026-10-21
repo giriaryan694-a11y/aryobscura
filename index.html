@@ -176,6 +176,7 @@
         <button class="lang" onclick="pickLang('vbs')">VBScript <span class="ext">.vbs</span></button>
         <button class="lang" onclick="pickLang('vba')">VBA Macro <span class="ext">Office .docm / .xlsm</span></button>
         <button class="lang" onclick="pickLang('lnk')">LNK Shortcut <span class="ext">generator → .lnk</span></button>
+        <button class="lang" onclick="pickLang('ahk')">AutoHotkey <span class="ext">.ahk</span></button>
         <button class="lang" onclick="pickLang('hta')">HTML Application <span class="ext">.hta</span></button>
         <div class="note">Binary formats (.lnk, .scr, .exe) can't be text-obfuscated directly — the LNK target emits a generator script that builds the shortcut with an encoded target.</div>
       </div>
@@ -192,6 +193,11 @@
         <button class="lang" onclick="pickLang('javascript')">JavaScript <span class="ext">.js / .mjs</span></button>
         <button class="lang" onclick="pickLang('php')">PHP <span class="ext">.php</span></button>
         <button class="lang" onclick="pickLang('perl')">Perl <span class="ext">.pl / .pm</span></button>
+        <button class="lang" onclick="pickLang('go')">Go <span class="ext">.go</span></button>
+        <button class="lang" onclick="pickLang('rust')">Rust <span class="ext">.rs</span></button>
+        <button class="lang" onclick="pickLang('csharp')">C# (.NET) <span class="ext">.cs</span></button>
+        <button class="lang" onclick="pickLang('nim')">Nim <span class="ext">.nim</span></button>
+        <button class="lang" onclick="pickLang('groovy')">Groovy <span class="ext">.groovy</span></button>
         <button class="lang" onclick="pickLang('java')">Java <span class="ext">.java</span></button>
         <button class="lang" onclick="pickLang('ruby')">Ruby <span class="ext">.rb</span></button>
         <button class="lang" onclick="pickLang('lua')">Lua <span class="ext">.lua</span></button>
@@ -314,6 +320,7 @@ const LANGS={
   batch:{name:"Batch",ext:"bat",demo:'@echo off\necho AryObscura online\nver\npause'},
   vbs:{name:"VBScript",ext:"vbs",demo:'MsgBox "AryObscura online", 64, "status"'},
   vba:{name:"VBA Macro (Office)",ext:"vba",demo:'echo AryObscura online'},
+  ahk:{name:"AutoHotkey",ext:"ahk",demo:'echo AryObscura online'},
   lnk:{name:"LNK Shortcut Generator",ext:"ps1",demo:'echo AryObscura online'},
   hta:{name:"HTML Application",ext:"hta",demo:'<h1>AryObscura online</h1>\n<p>hta demo</p>'},
   bash:{name:"Bash / Zsh",ext:"sh",demo:'#!/usr/bin/env bash\necho "AryObscura online"\nwhoami\nuname -s'},
@@ -323,6 +330,11 @@ const LANGS={
   javascript:{name:"JavaScript",ext:"js",demo:'console.log("AryObscura online");\nconsole.log("answer:", 6*7);'},
   php:{name:"PHP",ext:"php",demo:'<?php\necho "AryObscura online".PHP_EOL;\necho PHP_OS;'},
   perl:{name:"Perl",ext:"pl",demo:'print "AryObscura online\\n";\nprint "perl ok\\n";'},
+  go:{name:"Go",ext:"go",demo:'echo AryObscura online'},
+  rust:{name:"Rust",ext:"rs",demo:'echo AryObscura online'},
+  csharp:{name:"C# (.NET)",ext:"cs",demo:'echo AryObscura online'},
+  nim:{name:"Nim",ext:"nim",demo:'echo AryObscura online'},
+  groovy:{name:"Groovy",ext:"groovy",demo:'println "AryObscura online"'},
   java:{name:"Java",ext:"java",demo:'echo AryObscura online'},
   ruby:{name:"Ruby",ext:"rb",demo:'puts "AryObscura online"\nputs "ruby ok"'},
   lua:{name:"Lua",ext:"lua",demo:'print("AryObscura online")\nprint("lua ok")'},
@@ -412,6 +424,19 @@ hta:[
     arr+=`\ndocument.write(String.fromCharCode.apply(null,${v}));`;
     return `<html>\n<hta:application>\n<script>\n${arr}\n<\/script>\n</html>\n`;}}],
 
+ahk:[
+ {name:"Chr() chain → Run (hidden)",lvl:2,desc:"Input: a command line to run. The command is rebuilt at runtime from Chr() codes and launched hidden via Run. Pure AutoHotkey v1, no dependencies.",
+  fn:s=>{const v=rand(5);
+    return `${v} := `+Array.from(s).map(c=>`Chr(${c.charCodeAt(0)})`).join(".")+`\nRun, %${v}%,, Hide\n`;}},
+ {name:"Base64 → MSXML DOM decode → Run",lvl:3,desc:"Input: a command line to run. Base64 decoded at runtime via the MSXML DOM binary node trick (a classic AHK obfuscation technique), then launched hidden.",
+  fn:s=>{const v=rand(5),n=rand(4);
+    return `xml := ComObjCreate("MSXML2.DOMDocument.6.0")\n`+
+      `${n} := xml.createElement("b64")\n`+
+      `${n}.dataType := "bin.base64"\n`+
+      `${n}.text := "${b64e(s)}"\n`+
+      `${v} := StrGet(&${n}.nodeTypedValue, "UTF-8", "CP0")\n`+
+      `Run, %${v}%,, Hide\n`;}}],
+
 bash:[
  {name:"Base64 eval",lvl:2,desc:"Script Base64'd, decoded at runtime and piped straight into eval. Works in bash and zsh.",
   fn:s=>`eval "$(echo ${b64e(s)} | base64 -d)"\n`},
@@ -469,6 +494,54 @@ perl:[
   fn:s=>`eval pack("H*","${toHex(s)}");\n`},
  {name:"MIME::Base64 eval",lvl:2,desc:"Payload Base64'd and decoded with MIME::Base64 (core module since 5.7) before eval.",
   fn:s=>`use MIME::Base64;\neval decode_base64('${b64e(s)}');\n`}],
+
+go:[
+ {name:"Base64 → os/exec",lvl:2,desc:"Input: a command line to run. Go has no eval — the command is Base64'd, decoded at runtime with encoding/base64 and executed via exec.Command(sh -c). Compiles anywhere Go runs.",
+  fn:s=>`package main\n\nimport (\n  "encoding/base64"\n  "os/exec"\n)\n\nfunc main() {\n  p, _ := base64.StdEncoding.DecodeString("${b64e(s)}")\n  exec.Command("sh", "-c", string(p)).Run()\n}\n`},
+ {name:"Hex literal → os/exec",lvl:3,desc:"Input: a command line to run. Payload hex'd into a byte literal — no Base64 alphabet anywhere in the source.",
+  fn:s=>`package main\n\nimport "os/exec"\n\nfunc main() {\n  p := []byte{${u8(s).join(",")}}\n  exec.Command("sh", "-c", string(p)).Run()\n}\n`}],
+
+rust:[
+ {name:"Inline Base64 decoder → Command",lvl:3,desc:"Input: a command line to run. Self-contained Base64 decoder embedded in the source (no crates), decoded at runtime and executed via std::process::Command. Compiles with plain rustc/cargo.",
+  fn:s=>{const A="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    return `const T:&str="${A}";\n`+
+      `fn d(s:&str)->Vec<u8>{let m=|c:char|T.find(c).unwrap_or(0)as u32;let v:Vec<u32>=s.chars().map(m).collect();`+
+      `let mut o=Vec::new();for i in(0..v.len()).step_by(4){let n=(v[i]<<18)|(v.get(i+1).copied().unwrap_or(0)<<12)|`+
+      `(v.get(i+2).copied().unwrap_or(0)<<6)|v.get(i+3).copied().unwrap_or(0);`+
+      `o.push((n>>16)as u8);if s.as_bytes().get(i+2)!=Some(&b'='){o.push((n>>8)as u8);}if s.as_bytes().get(i+3)!=Some(&b'='){o.push(n as u8);}}o}\n`+
+      `fn main(){let p=d("${b64e(s)}");let c=String::from_utf8(p).unwrap();`+
+      `std::process::Command::new("sh").arg("-c").arg(&c).status().unwrap();}\n`;}},
+ {name:"Hex literal → Command",lvl:3,desc:"Input: a command line to run. Payload as a hex string decoded with u8::from_str_radix — no Base64, no crates.",
+  fn:s=>`fn main(){let h="${toHex(s)}";let mut p=Vec::new();`+
+    `for i in(0..h.len()).step_by(2){p.push(u8::from_str_radix(&h[i..i+2],16).unwrap());}\n`+
+    `let c=String::from_utf8(p).unwrap();std::process::Command::new("sh").arg("-c").arg(&c).status().unwrap();}\n`}],
+
+csharp:[
+ {name:"Base64 → Process.Start",lvl:2,desc:"Input: a command line to run. Base64'd, decoded with Convert.FromBase64String and executed via Process.Start. Pure .NET, zero NuGet packages.",
+  fn:s=>{const cls="M"+rnd(100,999);
+    return `using System;\nusing System.Diagnostics;\nusing System.Text;\n\nclass ${cls} {\n  static void Main() {\n`+
+      `    string c = Encoding.UTF8.GetString(Convert.FromBase64String("${b64e(s)}"));\n`+
+      `    Process.Start(new ProcessStartInfo("/bin/sh", "-c " + c) { UseShellExecute = false });\n  }\n}\n`;}},
+ {name:"Char array → Process.Start",lvl:3,desc:"Input: a command line to run. Command flattened into a char[] literal — no strings, no Base64 in the source.",
+  fn:s=>{const cls="M"+rnd(100,999);const codes=Array.from(s).map(c=>c.charCodeAt(0));
+    return `using System.Diagnostics;\n\nclass ${cls} {\n  static void Main() {\n`+
+      `    string c = new string(new char[] {${codes.join(",")}});\n`+
+      `    Process.Start(new ProcessStartInfo("/bin/sh", "-c " + c) { UseShellExecute = false });\n  }\n}\n`;}}],
+
+nim:[
+ {name:"base64.decode → execCmd",lvl:2,desc:"Input: a command line to run. Base64'd, decoded with Nim's stdlib base64 and executed via os.execCmd. One import, fully portable.",
+  fn:s=>`import base64, os\n\ndiscard execCmd(decode("${b64e(s)}"))\n`},
+ {name:"Hex → parseHexInt → execCmd",lvl:3,desc:"Input: a command line to run. Payload hex'd, rebuilt via parseHexInt and executed. No Base64 alphabet in the source.",
+  fn:s=>{const hex=toHex(s);const p=rand(4);
+    return `import os, strutils\n\nvar h = "${hex}"\nvar ${p} = ""\n`+
+      `for i in countup(0, h.len - 2, 2):\n  ${p}.add chr(parseHexInt(h[i..i+1]))\n`+
+      `discard execCmd(${p})\n`;}}],
+
+groovy:[
+ {name:"evaluate(decodeBase64)",lvl:2,desc:"Payload Base64'd and executed with Groovy's evaluate — real eval semantics like JavaScript, runs on any JVM.",
+  fn:s=>`def d = new String("${b64e(s)}".decodeBase64())\nevaluate(d)\n`},
+ {name:"Char array → evaluate",lvl:3,desc:"Payload flattened into a char list, rebuilt into a String and evaluated. No Base64 alphabet in the source.",
+  fn:s=>`def d = new String([${Array.from(s).map(c=>c.charCodeAt(0)).join(",")}] as char[])\nevaluate(d)\n`}],
 
 java:[
  {name:"Base64 → Runtime.exec",lvl:2,desc:"Input: a command line to run. The command is Base64'd, decoded at runtime with java.util.Base64 and executed via Runtime.getRuntime().exec. Compiles and runs on Java 8+ with zero dependencies.",
@@ -656,6 +729,38 @@ function tryDecode(t){
   /* powershell -enc / lnk EncodedCommand (UTF-16LE base64) */
   if(m=t.match(/-enc(?:odedcommand)?\s+([A-Za-z0-9+/]{16,}={0,2})/i))
     return{name:"PowerShell -EncodedCommand (UTF-16LE)",data:du16le(b64dRaw(m[1]))};
+  /* go: base64.StdEncoding.DecodeString */
+  if(m=t.match(/base64\.StdEncoding\.DecodeString\("([A-Za-z0-9+/]{16,}={0,2})"\)/))
+    return{name:"Base64 → os/exec (Go)",data:b64d(m[1])};
+  if(m=t.match(/:=\s*\[\]byte\{(\d+(?:,\d+){8,})\}/))
+    return{name:"byte literal (Go)",data:m[1].split(",").map(Number).map(n=>String.fromCharCode(n)).join("")};
+  /* rust: inline decoder call or hex */
+  if(m=t.match(/d\("([A-Za-z0-9+/]{16,}={0,2})"\)/)&&/fn d\(/.test(t))
+    return{name:"Inline Base64 decoder (Rust)",data:b64d(m[1])};
+  if(m=t.match(/let h="([0-9a-fA-F]{16,})"/)&&/from_str_radix/.test(t))
+    return{name:"Hex literal (Rust)",data:fromHex(m[1])};
+  /* csharp */
+  if(m=t.match(/FromBase64String\("([A-Za-z0-9+/]{16,}={0,2})"\)/))
+    return{name:"Base64 → Process.Start (C#)",data:b64d(m[1])};
+  if(m=t.match(/new char\[\]\s*\{(\d+(?:,\d+){8,})\}/))
+    return{name:"char[] literal (C#)",data:m[1].split(",").map(Number).map(n=>String.fromCharCode(n)).join("")};
+  /* nim */
+  if(m=t.match(/execCmd\(decode\("([A-Za-z0-9+/]{16,}={0,2})"\)\)/))
+    return{name:"base64.decode → execCmd (Nim)",data:b64d(m[1])};
+  if(m=t.match(/var h = "([0-9a-fA-F]{16,})"/)&&/parseHexInt/.test(t))
+    return{name:"Hex → parseHexInt (Nim)",data:fromHex(m[1])};
+  /* groovy */
+  if(m=t.match(/"([A-Za-z0-9+/]{16,}={0,2})"\.decodeBase64\(\)/))
+    return{name:"evaluate(decodeBase64) (Groovy)",data:b64d(m[1])};
+  if(m=t.match(/new String\(\[(\d+(?:,\d+){8,})\] as char\[\]\)/))
+    return{name:"char[] → evaluate (Groovy)",data:m[1].split(",").map(Number).map(n=>String.fromCharCode(n)).join("")};
+  /* autohotkey */
+  if(m=t.match(/^(\w+) := ((?:Chr\(\d+\)\.?){6,})\nRun,/m)){
+    const codes=[...m[2].matchAll(/Chr\((\d+)\)/g)].map(x=>+x[1]);
+    return{name:"Chr() chain → Run (AutoHotkey)",data:codes.map(n=>String.fromCharCode(n)).join("")};
+  }
+  if(m=t.match(/\.text := "([A-Za-z0-9+/]{16,}={0,2})"/))
+    return{name:"MSXML bin.base64 node (AutoHotkey)",data:b64d(m[1])};
   /* java Base64 → Runtime.exec */
   if(m=t.match(/Base64\.getDecoder\(\)\.decode\("([A-Za-z0-9+/]{16,}={0,2})"\)/))
     return{name:"Base64 → Runtime.exec (Java)",data:b64d(m[1])};
@@ -729,6 +834,12 @@ function guessLang(t){
   if(/\bclass\s+\w+\s*\{|public static void main/.test(t))return"java";
   if(/\bputs\b|\brequire\s+"base64"/.test(t))return"ruby";
   if(/\bloadstring\b|string\.char\(|local\s+\w+\s*=/.test(t))return"lua";
+  if(/\bpackage\s+main\b|\bfunc\s+main\(/.test(t))return"go";
+  if(/\bfn\s+main\(|std::process::Command/.test(t))return"rust";
+  if(/static\s+void\s+Main|using\s+System/.test(t))return"csharp";
+  if(/\bimport\s+base64\b|\bproc\s+\w+|countup\(/.test(t))return"nim";
+  if(/\bevaluate\(|decodeBase64|as char\[\]/.test(t))return"groovy";
+  if(/ComObjCreate|Run, %/.test(t))return"autohotkey";
   if(/\buse\s+strict\b|print\s+"/.test(t))return"perl";
   if(/console\.log|function\s|=>|var\s|const\s|let\s/.test(t))return"javascript";
   return"unknown";
