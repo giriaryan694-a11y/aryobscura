@@ -32,6 +32,7 @@ Paste an obfuscated script — AryObscura fingerprints the encoding scheme, peel
 | **VBScript** (`.vbs`) | Chr() concatenation → Execute · XOR keystream + Base64 → Execute |
 | **VBA Macro** (Office) | Chr() chain → hidden Shell (AutoOpen) · Base64 → certutil drop |
 | **LNK Shortcut** | Generator script → `.lnk` with `-enc` (UTF-16LE) target · char-splat variant |
+| **AutoHotkey** (`.ahk`) | Chr() chain → hidden Run · Base64 → MSXML DOM decode → Run |
 | **HTA** (`.hta`) | Base64 → document.write · Char-code stream |
 
 ### Linux
@@ -48,6 +49,11 @@ Paste an obfuscated script — AryObscura fingerprints the encoding scheme, peel
 | **JavaScript** (`.js`) | eval(atob) · String.fromCharCode stream · Double-layer Base64 |
 | **PHP** (`.php`) | eval(base64_decode) · ROT-13 + Base64 |
 | **Perl** (`.pl`) | eval pack H* · MIME::Base64 |
+| **Go** (`.go`) | Base64 → os/exec · Hex byte literal |
+| **Rust** (`.rs`) | Inline Base64 decoder (no crates) → Command · Hex via from_str_radix |
+| **C# (.NET)** (`.cs`) | Base64 → Process.Start · char[] literal |
+| **Nim** (`.nim`) | base64.decode → execCmd · Hex → parseHexInt |
+| **Groovy** (`.groovy`) | evaluate(decodeBase64) · char[] → evaluate |
 | **Java** (`.java`) | Base64 → Runtime.exec · char[] literal (Java 8+) |
 | **Ruby** (`.rb`) | eval(Base64.decode64) · eval(pack H*) |
 | **Lua** (`.lua`) | loadstring + string.char (5.1/LuaJIT) · self-contained Base64 decoder |
@@ -55,7 +61,7 @@ Paste an obfuscated script — AryObscura fingerprints the encoding scheme, peel
 
 ## What the analysis engine detects
 
-Base64 eval chains (shell), `exec(b64decode)` / `bytes.fromhex` / ROT-13 (Python), `FromBase64String` + IEX (PowerShell), `-enc` EncodedCommand (UTF-16LE), `atob` / `fromCharCode` (JavaScript), `pack H*` / `decode_base64` (Perl), `base64_decode` / `str_rot13` (PHP), `Chr()` chains / XOR keystream (VBScript), Chr→Shell / certutil drops (VBA), `loadstring` patterns (Lua), `Base64.decode64` / `pack H*` (Ruby), Java `Base64.getDecoder` / `char[]`, certutil echo drops (Batch), raw Base64 blobs, and nested combinations up to 8 layers.
+Base64 eval chains (shell), `exec(b64decode)` / `bytes.fromhex` / ROT-13 (Python), `FromBase64String` + IEX (PowerShell), `-enc` EncodedCommand (UTF-16LE), `atob` / `fromCharCode` (JavaScript), `pack H*` / `decode_base64` (Perl), `base64_decode` / `str_rot13` (PHP), `Chr()` chains / XOR keystream (VBScript), Chr→Shell / certutil drops (VBA), `loadstring` patterns (Lua), `Base64.decode64` / `pack H*` (Ruby), Java `Base64.getDecoder` / `char[]`, Go `StdEncoding.DecodeString` / byte literals, Rust inline-decoder / hex literals, C# `FromBase64String` / `char[]`, Nim `decode` / `parseHexInt`, Groovy `decodeBase64`, AutoHotkey `Chr()` chains / MSXML `bin.base64`, certutil echo drops (Batch), raw Base64 blobs, and nested combinations up to 8 layers.
 
 ## Verification
 
